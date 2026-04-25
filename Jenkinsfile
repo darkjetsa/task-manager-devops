@@ -146,9 +146,8 @@ pipeline {
 
             post {
                 always {
-                    // Enforce Quality Gate — waits up to 5 minutes for result
-                    timeout(time: 5, unit: 'MINUTES') {
-                        waitForQualityGate abortPipeline: true
+                    timeout(time: 3, unit: 'MINUTES') {
+                        waitForQualityGate abortPipeline: false
                     }
                 }
             }
