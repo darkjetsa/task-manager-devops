@@ -8,7 +8,7 @@ pipeline {
         BUILD_VERSION   = "${APP_NAME}-${BUILD_NUMBER}"
         STAGING_PORT    = '5001'
         PROD_PORT       = '5000'
-        SONAR_HOST_URL  = 'http://sonarqube:9000'
+        SONAR_HOST_URL  = 'http://172.18.0.3:9000'
         // SONAR_TOKEN and DOCKER_CREDENTIALS set as Jenkins credentials
     }
 
