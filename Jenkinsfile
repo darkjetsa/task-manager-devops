@@ -237,6 +237,7 @@ print('Bandit security scan passed')
                     docker run -d \
                         --name task-manager-staging \
                         --restart unless-stopped \
+                        --network devops-network \
                         -p ${STAGING_PORT}:5000 \
                         -e FLASK_ENV=staging \
                         ${IMAGE_NAME}:${BUILD_NUMBER}
@@ -247,7 +248,7 @@ print('Bandit security scan passed')
                     for i in $(seq 1 10); do
                         sleep 3
                         STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-                            http://localhost:${STAGING_PORT}/health || echo "000")
+                            http://task-manager-staging:5000/health || echo "000")
                         if [ "$STATUS" = "200" ]; then
                             echo "Health check PASSED (attempt $i) — staging is live on port ${STAGING_PORT}"
                             exit 0
@@ -296,6 +297,7 @@ print('Bandit security scan passed')
                     docker run -d \
                         --name task-manager-production \
                         --restart always \
+                        --network devops-network \
                         -p ${PROD_PORT}:5000 \
                         -e FLASK_ENV=production \
                         ${IMAGE_NAME}:${RELEASE_TAG}
@@ -304,7 +306,7 @@ print('Bandit security scan passed')
                     sleep 5
 
                     STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-                        http://localhost:${PROD_PORT}/health || echo "000")
+                        http://task-manager-production:5000/health || echo "000")
 
                     if [ "$STATUS" = "200" ]; then
                         echo "PRODUCTION HEALTH CHECK PASSED — ${RELEASE_TAG} is live"
@@ -361,7 +363,7 @@ print('Bandit security scan passed')
                 // Verify production metrics endpoint is being scraped
                 sh '''
                     echo "--- Verifying /metrics endpoint ---"
-                    METRICS=$(curl -s http://localhost:${PROD_PORT}/metrics)
+                    METRICS=$(curl -s http://task-manager-production:5000/metrics)
                     echo "$METRICS"
 
                     if echo "$METRICS" | grep -q "tasks_total"; then
@@ -379,7 +381,7 @@ print('Bandit security scan passed')
 
                     sleep 5
                     HEALTH=$(curl -s -o /dev/null -w "%{http_code}" \
-                        http://localhost:${PROD_PORT}/health || echo "000")
+                        http://task-manager-production:5000/health || echo "000")
                     echo "Health during outage: HTTP $HEALTH (expected: not 200)"
 
                     echo "Recovering: restarting production container..."
@@ -387,7 +389,7 @@ print('Bandit security scan passed')
                     sleep 5
 
                     HEALTH=$(curl -s -o /dev/null -w "%{http_code}" \
-                        http://localhost:${PROD_PORT}/health || echo "000")
+                        http://task-manager-production:5000/health || echo "000")
                     if [ "$HEALTH" = "200" ]; then
                         echo "Incident simulation COMPLETE — recovery successful"
                     else
