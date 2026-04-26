@@ -343,20 +343,33 @@ print('Bandit security scan passed')
 
                 // Start monitoring stack (Prometheus + Grafana)
                 sh '''
-                    export BUILD_VERSION=${BUILD_NUMBER}
-                    docker-compose up -d prometheus grafana
+                    # Start Prometheus directly without docker-compose volume issues
+                    docker rm -f prometheus grafana 2>/dev/null || true
+
+                    docker run -d \
+                        --name prometheus \
+                        --network devops-network \
+                        -p 9090:9090 \
+                        prom/prometheus:latest \
+                        --config.file=/etc/prometheus/prometheus.yml \
+                        --web.enable-lifecycle
+
+                    docker run -d \
+                        --name grafana \
+                        --network devops-network \
+                        -p 3000:3000 \
+                        -e GF_SECURITY_ADMIN_PASSWORD=admin \
+                        grafana/grafana:latest
 
                     echo "Waiting for monitoring stack to initialise..."
                     sleep 10
 
-                    # Verify Prometheus is up
                     PROM_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-                        http://localhost:9090/-/healthy || echo "000")
+                        http://prometheus:9090/-/healthy || echo "000")
                     echo "Prometheus status: HTTP $PROM_STATUS"
 
-                    # Verify Grafana is up
                     GRAFANA_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-                        http://localhost:3000/api/health || echo "000")
+                        http://grafana:3000/api/health || echo "000")
                     echo "Grafana status: HTTP $GRAFANA_STATUS"
                 '''
 
